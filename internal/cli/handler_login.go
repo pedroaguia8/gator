@@ -1,6 +1,9 @@
 package cli
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 func HandlerLogin(s *State, cmd Command) error {
 	if len(cmd.Args) == 0 {
@@ -9,7 +12,12 @@ func HandlerLogin(s *State, cmd Command) error {
 
 	username := cmd.Args[0]
 
-	err := s.SetUser(username)
+	_, err := s.Db.GetUser(context.Background(), username)
+	if err != nil {
+		return fmt.Errorf("couldn't find registered user: %w", err)
+	}
+
+	err = s.Cfg.SetUser(username)
 	if err != nil {
 		return fmt.Errorf("couldn't set username: %w", err)
 	}

@@ -1,6 +1,12 @@
 package main
 
 import (
+	"database/sql"
+
+	_ "github.com/lib/pq"
+	"github.com/pedroaguia8/gator/internal/database"
+)
+import (
 	"log"
 	"os"
 
@@ -20,11 +26,20 @@ func main() {
 		log.Fatalf("Failed to read initial config: %v", err)
 	}
 	state := cli.State{}
-	state.Config = &cfg
+	state.Cfg = &cfg
+	db, err := sql.Open("postgres", cfg.DbURL)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	dbQueries := database.New(db)
+	state.Db = dbQueries
 
-	commands := cli.Commands{Handlers: map[string]func(*cli.State, cli.Command) error{}}
+	commands := cli.Commands{
+		Handlers: map[string]func(*cli.State, cli.Command) error{},
+	}
 
 	commands.Register("login", cli.HandlerLogin)
+	commands.Register("register", cli.HandlerRegister)
 
 	command := cli.Command{
 		Name: args[1],
