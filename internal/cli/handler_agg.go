@@ -14,6 +14,6 @@ func HandlerAgg(_ *State, _ Command) error {
 		return fmt.Errorf("error fetching feed: %w", err)
 	}
 
-	fmt.Println(feed)
+	fmt.Printf("Feed: %+v\n", feed)
 	return nil
 }
