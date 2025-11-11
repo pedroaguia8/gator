@@ -7,7 +7,7 @@ import (
 
 func HandlerLogin(s *State, cmd Command) error {
 	if len(cmd.Args) == 0 {
-		return fmt.Errorf("this command takes a username as parameter: login <username>")
+		return fmt.Errorf("this command takes a username as argument: login <username>")
 	}
 
 	username := cmd.Args[0]

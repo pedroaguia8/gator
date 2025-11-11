@@ -20,6 +20,7 @@ func main() {
 		log.Fatalf("Error: Not enough arguments provided")
 	}
 
+	// TODO: only allow register if user not set?
 	cfg, err := config.Read()
 	if err != nil {
 		// TODO: instead create a new default config?
@@ -42,6 +43,7 @@ func main() {
 	commands.Register("register", cli.HandlerRegister)
 	commands.Register("reset", cli.HandlerReset)
 	commands.Register("agg", cli.HandlerAgg)
+	commands.Register("addfeed", cli.HandlerAddFeed)
 
 	command := cli.Command{
 		Name: args[1],
