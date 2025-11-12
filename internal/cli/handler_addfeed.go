@@ -10,17 +10,18 @@ import (
 )
 
 func HandlerAddFeed(s *State, cmd Command) error {
+	currentUser := s.Cfg.CurrentUserName
+	user, err := s.Db.GetUser(context.Background(), currentUser)
+	if err != nil {
+		return fmt.Errorf("error retrieving current user: %w", err)
+	}
+
 	if len(cmd.Args) < 2 {
 		return fmt.Errorf("this command takes 2 arguments: addfeed <name> <url>")
 	}
 
 	name := cmd.Args[0]
 	url := cmd.Args[1]
-	currentUser := s.Cfg.CurrentUserName
-	user, err := s.Db.GetUser(context.Background(), currentUser)
-	if err != nil {
-		return fmt.Errorf("error retrieving current user: %w", err)
-	}
 
 	feed, err := s.Db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID:        uuid.New(),
