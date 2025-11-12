@@ -9,13 +9,7 @@ import (
 	"github.com/pedroaguia8/gator/internal/database"
 )
 
-func HandlerAddFeed(s *State, cmd Command) error {
-	currentUser := s.Cfg.CurrentUserName
-	user, err := s.Db.GetUser(context.Background(), currentUser)
-	if err != nil {
-		return fmt.Errorf("error retrieving current user: %w", err)
-	}
-
+func HandlerAddFeed(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) < 2 {
 		return fmt.Errorf("this command takes 2 arguments: addfeed <name> <url>")
 	}

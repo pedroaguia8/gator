@@ -9,14 +9,9 @@ import (
 	"github.com/pedroaguia8/gator/internal/database"
 )
 
-func HandlerFollow(s *State, cmd Command) error {
+func HandlerFollow(s *State, cmd Command, user database.User) error {
 	if len(cmd.Args) == 0 {
 		return fmt.Errorf("this command takes a url as argument: follow <url>")
-	}
-
-	user, err := s.Db.GetUser(context.Background(), s.Cfg.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("couldn't get current user: %w", err)
 	}
 
 	url := cmd.Args[0]
