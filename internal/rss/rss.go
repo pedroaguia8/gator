@@ -2,11 +2,15 @@ package rss
 
 import (
 	"context"
+	"database/sql"
 	"encoding/xml"
 	"fmt"
 	"html"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/pedroaguia8/gator/internal/database"
 )
 
 type RSSFeed struct {
@@ -23,6 +27,11 @@ type RSSItem struct {
 	Link        string `xml:"link"`
 	Description string `xml:"description"`
 	PubDate     string `xml:"pubDate"`
+}
+
+type DBLike interface {
+	GetNextFeedToFetch(ctx context.Context) (database.Feed, error)
+	MarkFeedFetched(ctx context.Context, arg database.MarkFeedFetchedParams) error
 }
 
 func FetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
@@ -58,8 +67,37 @@ func (feed *RSSFeed) decodeEscapedHtml() {
 	feed.Channel.Title = html.UnescapeString(feed.Channel.Title)
 	feed.Channel.Description = html.UnescapeString(feed.Channel.Description)
 
-	for _, item := range feed.Channel.Item {
-		item.Title = html.UnescapeString(item.Title)
-		item.Description = html.UnescapeString(item.Description)
+	for i := 0; i < len(feed.Channel.Item); i++ {
+		feed.Channel.Item[i].Title = html.UnescapeString(feed.Channel.Item[i].Title)
+		feed.Channel.Item[i].Description = html.UnescapeString(feed.Channel.Item[i].Description)
 	}
+}
+
+func ScrapeFeeds(ctx context.Context, db DBLike) error {
+	feedToFetch, err := db.GetNextFeedToFetch(ctx)
+	if err != nil {
+		return fmt.Errorf("couldn't retrieve next feed to fetch: %w", err)
+	}
+
+	err = db.MarkFeedFetched(ctx, database.MarkFeedFetchedParams{
+		LastFetchedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		UpdatedAt: time.Now(),
+		ID:        feedToFetch.ID,
+	})
+	if err != nil {
+		return fmt.Errorf("couldn't mark feed as fetched: %w", err)
+	}
+
+	feed, err := FetchFeed(ctx, feedToFetch.Url)
+	if err != nil {
+		return fmt.Errorf("couldn't fetch feed: %w", err)
+	}
+
+	for _, item := range feed.Channel.Item {
+		fmt.Printf("Item title: %s\n", item.Title)
+	}
+	return nil
 }

@@ -3,17 +3,27 @@ package cli
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pedroaguia8/gator/internal/rss"
 )
 
-func HandlerAgg(_ *State, _ Command) error {
-	url := "https://www.wagslane.dev/index.xml"
-	feed, err := rss.FetchFeed(context.Background(), url)
-	if err != nil {
-		return fmt.Errorf("error fetching feed: %w", err)
+func HandlerAgg(s *State, cmd Command) error {
+	if len(cmd.Args) == 0 {
+		return fmt.Errorf("this command takes a duration as argument: agg <duration>. Ex.: agg 1h")
 	}
 
-	fmt.Printf("Feed: %+v\n", feed)
-	return nil
+	timeBetweenReqs := cmd.Args[0]
+	durationBetweenRes, err := time.ParseDuration(timeBetweenReqs)
+	if err != nil {
+		return fmt.Errorf("couldn't parse time between requests string to duration: %w", err)
+	}
+	fmt.Printf("Collecting feeds every %s\n", durationBetweenRes.String())
+	ticker := time.NewTicker(durationBetweenRes)
+	for ; ; <-ticker.C {
+		err := rss.ScrapeFeeds(context.Background(), s.Db)
+		if err != nil {
+			return fmt.Errorf("error scraping feed: %w", err)
+		}
+	}
 }
