@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pedroaguia8/gator/internal/database"
 )
 
@@ -32,6 +34,7 @@ type RSSItem struct {
 type DBLike interface {
 	GetNextFeedToFetch(ctx context.Context) (database.Feed, error)
 	MarkFeedFetched(ctx context.Context, arg database.MarkFeedFetchedParams) error
+	CreatePost(ctx context.Context, arg database.CreatePostParams) (database.Post, error)
 }
 
 func FetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
@@ -96,8 +99,55 @@ func ScrapeFeeds(ctx context.Context, db DBLike) error {
 		return fmt.Errorf("couldn't fetch feed: %w", err)
 	}
 
+	err = saveFeed(feed, feedToFetch.ID, ctx, db)
+	if err != nil {
+		return fmt.Errorf("couldn't save feed: %w", err)
+	}
+
+	return nil
+}
+
+func saveFeed(feed *RSSFeed, feedId uuid.UUID, ctx context.Context, db DBLike) error {
 	for _, item := range feed.Channel.Item {
-		fmt.Printf("Item title: %s\n", item.Title)
+		parsedPubDate, err := parsePubDate(item.PubDate)
+		if err != nil {
+			log.Printf("couldn't parse 'published at' date %s for item %s of feed %s\n",
+				item.PubDate, item.Title, feed.Channel.Title)
+		}
+
+		_, err = db.CreatePost(ctx, database.CreatePostParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Title:     item.Title,
+			Url:       item.Link,
+			Description: sql.NullString{
+				String: item.Description,
+				Valid:  true,
+			},
+			PublishedAt: parsedPubDate,
+			FeedID:      feedId,
+		})
+		if err != nil {
+			if err.Error() == "pq: duplicate key value violates unique constraint \"posts_url_key\"" {
+				continue
+			}
+			log.Printf("couldn't save post: %s", err)
+		}
 	}
 	return nil
+}
+
+func parsePubDate(pubDate string) (sql.NullTime, error) {
+	parsedPubDate := sql.NullTime{}
+
+	parsedTime, err := time.Parse(time.RFC1123Z, pubDate)
+	if err != nil {
+		parsedPubDate.Valid = false
+		return parsedPubDate, fmt.Errorf("couldn't parse date according to RFC1123Z layout: %w", err)
+	}
+
+	parsedPubDate.Valid = true
+	parsedPubDate.Time = parsedTime
+	return parsedPubDate, nil
 }

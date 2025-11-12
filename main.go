@@ -49,6 +49,7 @@ func main() {
 	commands.Register("unfollow", cli.MiddlewareLoggedIn(cli.HandlerUnfollow))
 	commands.Register("following", cli.MiddlewareLoggedIn(cli.HandlerFollowing))
 	commands.Register("users", cli.HandlerUsers)
+	commands.Register("browse", cli.MiddlewareLoggedIn(cli.HandlerBrowse))
 
 	command := cli.Command{
 		Name: args[1],
@@ -59,5 +60,4 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
-
 }
