@@ -1,4 +1,4 @@
-# Gator 🐊
+# gator 🐊
 
 **gator** (as in, *aggre-gator*) is a command-line RSS feed aggregator.
 
