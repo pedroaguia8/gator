@@ -12,7 +12,7 @@ func HandlerFeeds(s *State, _ Command) error {
 	}
 
 	for _, feed := range feeds {
-		fmt.Printf("%+v\n", feed)
+		fmt.Printf("Feed: %s\nURL: %s\nAdded by: %s\n", feed.Name, feed.Url, feed.UserName)
 	}
 	return nil
 }
