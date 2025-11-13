@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/pedroaguia8/gator/internal/rss"
@@ -23,7 +24,7 @@ func HandlerAgg(s *State, cmd Command) error {
 	for ; ; <-ticker.C {
 		err := rss.ScrapeFeeds(context.Background(), s.Db)
 		if err != nil {
-			return fmt.Errorf("error scraping feed: %w", err)
+			log.Printf("Error scraping feed: %v", err)
 		}
 	}
 }
