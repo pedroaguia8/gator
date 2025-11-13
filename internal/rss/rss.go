@@ -141,13 +141,31 @@ func saveFeed(feed *RSSFeed, feedId uuid.UUID, ctx context.Context, db DBLike) e
 func parsePubDate(pubDate string) (sql.NullTime, error) {
 	parsedPubDate := sql.NullTime{}
 
-	parsedTime, err := time.Parse(time.RFC1123Z, pubDate)
-	if err != nil {
-		parsedPubDate.Valid = false
-		return parsedPubDate, fmt.Errorf("couldn't parse date according to RFC1123Z layout: %w", err)
+	// A list of common date layouts to try when parsing RSS pubDate
+	dateLayouts := []string{
+		time.RFC1123Z,
+		time.RFC822,
+		time.RFC822Z,
+		time.RFC1123,
+		time.RFC3339,
+		time.RFC3339Nano,
+		time.RFC850,
+		time.ANSIC,
+		time.UnixDate,
+		time.RubyDate,
+		time.DateTime,
+		time.DateOnly,
 	}
 
-	parsedPubDate.Valid = true
-	parsedPubDate.Time = parsedTime
-	return parsedPubDate, nil
+	for _, layout := range dateLayouts {
+		parsedTime, err := time.Parse(layout, pubDate)
+		if err == nil {
+			parsedPubDate.Valid = true
+			parsedPubDate.Time = parsedTime
+			return parsedPubDate, nil
+		}
+	}
+
+	parsedPubDate.Valid = false
+	return parsedPubDate, fmt.Errorf("couldn't parse date '%s' with any known layout", pubDate)
 }
